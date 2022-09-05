@@ -1,163 +1,142 @@
-// const firstBtn = document.querySelector("button");
+function validateExists(value) {
+  return value && value.trim();
+}
 
-// firstBtn.addEventListener("click", function (event) {
-//   console.log(event.target.parentNode);
-// });
+function validateNumber(value) {
+  return !isNaN(value);
+}
 
-// function to handler favorite button clicks
-const favoriteButtonClickHandler = (event) => {
-  const park = event.target.parentNode;
-  park.style.backgroundColor = "#c8e6c9";
-};
+function validateRange(value, min, max) {
+  return value >= min && value <= max;
+}
 
-// function for sorting by name
-const sortByName = (parkA, parkB) => {
-  const parkAName = parkA.querySelector("h2").innerText;
-  const parkBName = parkB.querySelector("h2").innerText;
-  if (parkAName < parkBName) {
-    return -1;
-  } else if (parkAName > parkBName) {
-    return 1;
+function validateDate(value) {
+  const date = moment(value);
+  return date.isValid();
+}
+
+function validateForm(formData) {
+  const errors = {};
+
+  // check if name was entered
+  if (!validateExists(formData.get("name"))) {
+    errors.name = "Please enter a name";
+  }
+
+  // check if rating was entered
+  if (!validateExists(formData.get("rating"))) {
+    errors.rating = "Please enter a rating";
   } else {
-    return 0;
+    //check if the raying is a number
+    if (!validateNumber(formData.get("rating"))) {
+      errors.rating = "Rating must be a number";
+    } else {
+      // since it is a number, convert it
+      const rating = Number.parseFloat(formData.get("rating"));
+      //check that the rating is between 1 and 5 inclusive
+      if (!validateRange(rating, 1, 5)) {
+        errors.rating = "Rating must be between 1 and 5 inclusive";
+      }
+    }
+  }
+
+  // check if description was entered
+  if (!validateExists(formData.get("description"))) {
+    errors.description = "Please enter short description";
+  }
+
+  // check if established date was entered
+  if (!validateExists(formData.get("established"))) {
+    errors.established = "Please enter date";
+  } else {
+    // check if the value entered was a correct date
+    if (!validateDate(formData.get("established"))) {
+      errors.established =
+        "The date is not correctly formatted. (e.g. July 4, 1776)";
+    }
+  }
+
+  // check if area was entered
+  if (!validateExists(formData.get("area"))) {
+    errors.area = "Please enter the area of the park";
+  }
+
+  // check if location date was entered
+  if (!validateExists(formData.get("location"))) {
+    errors.location = "Please enter the location of the park";
+  }
+
+  return errors;
+}
+
+const submitHandler = (event) => {
+  event.preventDefault();
+
+  const form = event.target;
+  const formData = new FormData(form);
+
+  const errors = validateForm(formData);
+
+  // clear all previous errors
+  const errorElements = document.querySelectorAll(".error");
+  for (let element of errorElements) {
+    element.style.display = "none";
+  }
+
+  // display any new errors
+  Object.keys(errors).forEach((key) => {
+    // find the specific error element
+    const errorElement = document.querySelector(`#${key}-form .error`);
+    errorElement.innerHTML = errors[key];
+    errorElement.style.display = "block";
+  });
+
+  // if there are no errors
+  if (!Object.keys(errors).length) {
+    //create a new element
+    const parkSection = document.createElement("section");
+
+    // add the park class
+    parkSection.classList.add("park-display");
+
+    // construct the HTML for this element
+    const content = `
+    <h2>${formData.get("name")}</h2>
+    <div class="location-display">${formData.get("location")}</div>
+    <div class="description-display">${formData.get("description")}</div>
+    <button class="rate-button" title="Add to Favourites">&#9734;</button>
+    <div class="stats">
+      <div class="established-display stat">
+        <h3>Established</h3>
+        <div class="value">${moment(formData.get("established")).format(
+          "MMMM D, YYYY"
+        )}</div>
+      </div>
+      <div class="area-display stat">
+        <h3>Area</h3>
+        <div class="value">${formData.get("area")}</div>
+      </div>
+      <div class="rating-display stat">
+        <h3>Rating</h3>
+        <div class="value">${formData.get("rating")}</div>
+      </div>
+    </div>
+    `;
+
+    // set the innerHTML
+    parkSection.innerHTML = content;
+
+    //append to the main element
+    document.querySelector("main").appendChild(parkSection);
   }
 };
 
-// function for sorting by rating
-const sortByRating = (parkA, parkB) => {
-  const parkARating = parseFloat(
-    parkA.querySelector(".rating-display > .value").innerText
-  );
-  const parkBRating = parseFloat(
-    parkB.querySelector(".rating-display > .value").innerText
-  );
-  return parkBRating - parkARating;
-};
-
-// function for handling the nameSorter click
-const nameSorterClickHandler = (event) => {
-  event.preventDefault();
-
-  // 1.  get the main element
-  const main = document.querySelector("main");
-
-  // 2. get the list of parks
-  const parksList = main.querySelectorAll(".park-display");
-
-  // 3. empty the main
-  main.innerHTML = "";
-
-  // 4. create an array
-  const parksArray = Array.from(parksList);
-
-  // 5. sort the array
-  parksArray.sort(sortByName);
-
-  // 6. Insert each park into the DOM
-  parksArray.forEach((park) => {
-    main.appendChild(park);
-  });
-};
-
-// function to handle the ratingSorter click
-const ratingSorterClickHandler = (event) => {
-  event.preventDefault();
-
-  // 1.  get the main element
-  const main = document.querySelector("main");
-
-  // 2. get the list of parks
-  const parksList = main.querySelectorAll(".park-display");
-
-  // 3. empty the main
-  main.innerHTML = "";
-
-  // 4. create an array
-  const parksArray = Array.from(parksList);
-
-  // 5. sort the array
-  parksArray.sort(sortByRating);
-
-  // 6. Insert each park into the DOM
-  parksArray.forEach((park) => {
-    main.appendChild(park);
-  });
-};
-
-// the point where all the code starts
 const main = () => {
-  // select the nameSorter link
-  const nameSorter = document.querySelector("#name-sorter");
+  // get the form element
+  const form = document.querySelector("#park-form");
 
-  // add an event listener
-  nameSorter.addEventListener("click", nameSorterClickHandler);
-
-  // select the ratingSorter link
-  const ratingSorter = document.querySelector("#rating-sorter");
-
-  // add an event listener
-  ratingSorter.addEventListener("click", ratingSorterClickHandler);
-
-  // select all the buttons for all the parks
-  const allBtns = document.querySelectorAll(".rate-button");
-
-  // iterate the list of buttons and add an event handler to each
-  allBtns.forEach((btn) => {
-    btn.addEventListener("click", favoriteButtonClickHandler);
-  });
+  // attach the submit handler
+  form.addEventListener("submit", submitHandler);
 };
 
-// Add event listener for DOMContentLoaded
 window.addEventListener("DOMContentLoaded", main);
-
-// Function for sorting by name
-const sortByName = (parkA, parkB) => {
-  const parkAName = parkA.querySelector("h2").innerText;
-  const parkBName = parkB.querySelector("h2").innerText;
-  if (parkAName < parkBName) {
-    return -1;
-  } else if (parkAName > parkBName) {
-    return 1;
-  } else {
-    return 0;
-  }
-};
-
-// Function for handling the `nameSorter` click
-const nameSorterClickHandler = (event) => {
-  event.preventDefault();
-
-  // 1.  Get the main element
-  const main = document.querySelector("main");
-
-  // 2. Get the list of parks
-  const parksList = main.querySelectorAll(".park-display");
-
-  // 3. Empty the main
-  main.innerHTML = "";
-
-  // 4. Create an array
-  const parksArray = Array.from(parksList);
-
-  // 5. Sort the array
-  parksArray.sort(sortByName);
-
-  // 6. Insert each park into the DOM
-  parksArray.forEach((park) => {
-    main.appendChild(park);
-  });
-};
-
-// Select the `nameSorter` link
-const nameSorter = document.querySelector("#name-sorter");
-
-// Add an event listener
-nameSorter.addEventListener("click", nameSorterClickHandler);
-
-console.log("Before!");
-
-window.addEventListener("DOMContentLoaded", (event) => {
-  console.log("Loaded!");
-});
-
-console.log("After!");
